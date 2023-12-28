@@ -5,7 +5,7 @@
 [![Coverage](https://coveralls.io/repos/github/MilesCranmer/UniAdminTools.jl/badge.svg?branch=master)](https://coveralls.io/github/MilesCranmer/UniAdminTools.jl?branch=master)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-Rigorous optimisation tools for academic administrative duties:
+Robust optimisation tool for academic administrative duties:
 
 - Allocating projects among students (`projalloc`)
   - Incorporates ranked preferences and per-project saturation constraints

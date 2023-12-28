@@ -5,12 +5,12 @@
 [![Coverage](https://coveralls.io/repos/github/MilesCranmer/UniAdminTools.jl/badge.svg?branch=master)](https://coveralls.io/github/MilesCranmer/UniAdminTools.jl?branch=master)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-Robust optimisation tool for academic administrative duties:
+Optimisation tools for academic administrative duties:
 
 - Allocating projects among students (`projalloc`)
   - Incorporates ranked preferences and per-project saturation constraints
   - Based on mixed-integer programming, using JuMP with Ipopt + HiGHS + Juniper
-- Robust aggregation of committee scores for job candidates (`mergescore`)
+- Aggregation of sparse committee scores for job candidates (`mergescore`)
   - Accounts for sparsity, noise, uncertainty, and different scoring scales among committee members
   - Bayesian inference scheme using TuringLang and NUTS
 

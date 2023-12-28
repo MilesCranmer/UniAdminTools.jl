@@ -61,7 +61,7 @@ Compute optimal project allocations for student projects, using two csv files.
     max_students_per_teacher::Int = 12,
     silent::Bool = false,
 )
-    out = optimize_project_allocations(
+    return optimize_project_allocations(
         choices,
         projects;
         output_fname = output,
@@ -73,8 +73,6 @@ Compute optimal project allocations for student projects, using two csv files.
         max_students_per_teacher,
         verbose = !silent,
     )
-    !silent && println(out)
-    return nothing
 end
 
 

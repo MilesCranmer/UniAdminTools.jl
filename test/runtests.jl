@@ -2,6 +2,7 @@ using UniAdminTools
 using Test
 using Aqua
 using Suppressor
+using Random: seed!
 
 @testset "Code quality (Aqua.jl)" begin
     Aqua.test_all(
@@ -13,17 +14,17 @@ using Suppressor
     Aqua.test_ambiguities(UniAdminTools; recursive = false)
 end
 
+function dedent(str::String)
+    lines = split(str, '\n')
+    filter!(line -> !isempty(strip(line)), lines)
+    min_indent = minimum(
+        length(match(r"^\s*", line).match) for line in lines if !isempty(strip(line))
+    )
+    dedented_lines = [replace(line, Regex("^" * " "^min_indent) => "") for line in lines]
+    return join(dedented_lines, '\n')
+end
+
 @testset "Project allocations" begin
-    @eval function dedent(str::String)
-        lines = split(str, '\n')
-        filter!(line -> !isempty(strip(line)), lines)
-        min_indent = minimum(
-            length(match(r"^\s*", line).match) for line in lines if !isempty(strip(line))
-        )
-        dedented_lines =
-            [replace(line, Regex("^" * " "^min_indent) => "") for line in lines]
-        return join(dedented_lines, '\n')
-    end
     @testset "Test 1 - easy optimization problem" begin
         tmpdir = mktempdir()
         choices_fname = joinpath(tmpdir, "example_project_choices.csv")
@@ -49,11 +50,11 @@ end
         end
         data = Ref{Any}()
         log = @capture_err begin
-            data[] = optimize_project_allocations(
-                choices_fname,
-                listings_fname;
+            data[] = projalloc(;
+                choices = choices_fname,
+                projects = listings_fname,
                 max_students_per_project = 2,
-                verbose = true,
+                silent = false,
             )
         end
         out = data[]
@@ -95,12 +96,12 @@ end
 
         data = Ref{Any}()
         log = @capture_err begin
-            data[] = optimize_project_allocations(
-                choices_fname,
-                listings_fname;
+            data[] = projalloc(;
+                choices = choices_fname,
+                projects = listings_fname,
                 max_students_per_project = 3,
                 max_students_per_teacher = 3,
-                verbose = false,
+                silent = true,
             )
         end
         out = data[]

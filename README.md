@@ -14,7 +14,6 @@ Optimisation tools for academic administrative duties:
   - Incorporates ranked preferences and per-project saturation constraints
   - Based on mixed-integer programming, using JuMP with Ipopt + HiGHS + Juniper
 
-
 ## Installation
 
 First, you need to install Julia:
@@ -32,6 +31,7 @@ julia -e 'using Pkg; pkg"add https://github.com/MilesCranmer/UniAdminTools.jl"'
 ```
 
 This should create some binaries in your `~/.julia/bin` folder that can be executed.
+Make sure to put that folder in your `PATH` environment variable.
 
 ## Usage
 
@@ -40,8 +40,8 @@ on [astroautomata.com/UniAdminTools.jl/dev](https://astroautomata.com/UniAdminTo
 
 ### `mergescore`
 
-```
-    mergescore input
+```text
+        mergescore input
                [--sheet-name SHEET_NAME]
                [--scorer-range SCORER_RANGE]
                [--candidate-range CANDIDATE_RANGE]
@@ -52,6 +52,12 @@ on [astroautomata.com/UniAdminTools.jl/dev](https://astroautomata.com/UniAdminTo
                [--n-samples 2000]
                [--n-adapts 500]
                [--sampler "NUTS()"]
+               [--lower-true-score 1.0]
+               [--upper-true-score 10.0]
+               [--mean-bias 0.0]
+               [--stdev-bias 1.0]
+               [--mean-scale 1.0]
+               [--stdev-scale 0.3]
                [--silent]
 ```
 
@@ -71,18 +77,18 @@ Estimate true scores of candidates from sparse observations by committee members
     (such as `"B1:J1"`).
 - `--data-range`: If an `xlsx` file is passed, the range of cells containing the scores of the candidates
     (such as `"B2:J10"`).
-- `--output`: The name of the (csv) file to write the estimated scores to.
-- `--scorer-info`: The name of the file to write the estimated biases and scales of the scorers to.
-- `--n-chains`: The number of chains to run.
-- `--n-samples`: The number of samples to draw from each chain.
-- `--n-adapts`: The number of samples to use for warming up.
-- `--sampler`: The sampler to use. Can be, for example, `"NUTS()"` or `"SMC()"`.
-- `--lower-true-score`: The lower bound of the uniform prior on the true scores.
-- `--upper-true-score`: The upper bound of the uniform prior on the true scores.
-- `--mean-bias`: The mean of the normal prior on the bias of the scorers.
-- `--stdev-bias`: The standard deviation of the normal prior on the bias of the scorers.
-- `--mean-scale`: The mean of the normal prior on the scale of the scorers.
-- `--stdev-scale`: The standard deviation of the normal prior on the scale of the scorers.
+- `--output <"candidate_info.csv">`: The name of the (csv) file to write the estimated scores to.
+- `--scorer-info <"scorer_info.csv">`: The name of the file to write the estimated biases and scales of the scorers to.
+- `--n-chains <6::Int>`: The number of chains to run.
+- `--n-samples <2000::Int>`: The number of samples to draw from each chain.
+- `--n-adapts <500::Int>`: The number of samples to use for warming up.
+- `--sampler <"NUTS()"::String>`: The sampler to use. Can be, for example, `"NUTS()"` or `"SMC()"`.
+- `--lower-true-score <1.0::Float64>`: The lower bound of the uniform prior on the true scores.
+- `--upper-true-score <10.0::Float64>`: The upper bound of the uniform prior on the true scores.
+- `--mean-bias <0.0::Float64>`: The mean of the normal prior on the bias of the scorers.
+- `--stdev-bias <1.0::Float64>`: The standard deviation of the normal prior on the bias of the scorers.
+- `--mean-scale <1.0::Float64>`: The mean of the normal prior on the scale of the scorers.
+- `--stdev-scale <0.3::Float64>`: The standard deviation of the normal prior on the scale of the scorers.
 
 #### Flags
 
@@ -112,6 +118,7 @@ scores of each candidate.
 
 ### `projalloc`
 
+```text
     projalloc --choices CHOICES
               --projects PROJECTS
               [--output "project_allocations.csv"]
@@ -122,6 +129,7 @@ scores of each candidate.
               [--max_students_per_project 4]
               [--max_students_per_teacher 12]
               [--silent]
+```
 
 Compute optimal project allocations for student projects, using two csv files.
 

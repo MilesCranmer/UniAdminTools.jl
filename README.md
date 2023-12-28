@@ -31,7 +31,7 @@ Then, install this package and all dependencies with:
 julia -e 'using Pkg; pkg"add https://github.com/MilesCranmer/UniAdminTools.jl"'
 ```
 
-which should create some binaries in your `~/.julia/bin` folder that can be executed:
+This should create some binaries in your `~/.julia/bin` folder that can be executed.
 
 ```bash
 projalloc --help

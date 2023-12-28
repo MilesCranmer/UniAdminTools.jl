@@ -65,11 +65,11 @@ Estimate true scores of candidates from sparse observations by committee members
 )
     sampler = eval(Meta.parse(sampler))
     return estimated_merged_scores(
-        input,
+        input;
         sheet_name,
         scorer_range,
         candidate_range,
-        data_range;
+        data_range,
         output,
         scorer_info,
         n_chains,
@@ -81,13 +81,13 @@ Estimate true scores of candidates from sparse observations by committee members
 end
 
 function estimated_merged_scores(
-    input::String,
+    input::String;
     sheet_name::Union{Nothing,String} = nothing,
     scorer_range::Union{Nothing,String} = nothing,
     candidate_range::Union{Nothing,String} = nothing,
     data_range::Union{Nothing,String} = nothing,
     output::String = "candidate_info.csv",
-    scorer_info::String = "scorer_info.csv";
+    scorer_info::String = "scorer_info.csv",
     n_chains = 6,
     n_samples = 2000,
     n_adapts = 500,
@@ -178,6 +178,7 @@ function _estimate_merged_scores(
     model = forward_model(obs_ij)
 
     verbose && @info "Created forward model."
+    verbose && @info "Loaded sampler:" sampler
     verbose && @info "Starting sampling."
 
     samples = sample(
@@ -215,11 +216,11 @@ function _estimate_merged_scores(
     ))
 
     candidate_info_data = DataFrame((
-        Name = string.(candidates),
-        Score = (x -> round(x, digits = 3)).(summary_scores.mean),
-        Uncertainty = (x -> round(x, digits = 2)).(summary_scores.std),
-        Q_25 = (x -> round(x, digits = 3)).(summary_scores_q[!, "25.0%"]),
-        Q_75 = (x -> round(x, digits = 3)).(summary_scores_q[!, "75.0%"]),
+        name = string.(candidates),
+        score = (x -> round(x, digits = 3)).(summary_scores.mean),
+        uncertainty = (x -> round(x, digits = 2)).(summary_scores.std),
+        q25 = (x -> round(x, digits = 3)).(summary_scores_q[!, "25.0%"]),
+        q75 = (x -> round(x, digits = 3)).(summary_scores_q[!, "75.0%"]),
     ))
 
     verbose && @info "Done!" candidate_info_data

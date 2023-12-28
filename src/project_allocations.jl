@@ -119,11 +119,12 @@ function _optimize_project_allocations(
         "nl_solver" => ipopt,
         "mip_solver" => highs,
         "time_limit" => optimizer_time_limit,
-        "log_levels" => verbose ? [:Table, :Info] : Symbol[]
+        "log_levels" => verbose ? [:Table, :Info] : Symbol[],
     )
     optimizer = juniper
     model = Model(optimizer)
-    verbose && @info "Loaded optimizer with `juniper` for local optimization, `highs` for MIP, and `ipopt` for NLP."
+    verbose &&
+        @info "Loaded optimizer with `juniper` for local optimization, `highs` for MIP, and `ipopt` for NLP."
 
     # Student assignment matrix
     @variable(model, assign[1:n_students, 1:n_projects], Bin)
@@ -143,13 +144,15 @@ function _optimize_project_allocations(
     verbose && @info "    - Students need 1 project."
 
     @constraint(model, sum(assign, dims = 1) .<= max_students_per_project)
-    verbose && @info "    - Each project can have at most $max_students_per_project students."
+    verbose &&
+        @info "    - Each project can have at most $max_students_per_project students."
 
     for k = 1:n_teachers
-        project_idx = findall(==(k), teacher_assignments)
-        @constraint(model, sum(assign[:, project_idx]) .<= max_students_per_teacher)
+        project_idx = teacher_assignments[teachers[k]]
+        @constraint(model, sum(assign[:, project_idx]) <= max_students_per_teacher)
     end
-    verbose && @info "    - Each supervisor can have at most $max_students_per_teacher students."
+    verbose &&
+        @info "    - Each supervisor can have at most $max_students_per_teacher students."
 
     verbose && @info "Creating objective as combination of happiness and load."
     @expression(model, total_happiness, sum(assign .* student_happiness))
@@ -184,19 +187,20 @@ function _optimize_project_allocations(
         ) for teacher in teachers
     )
 
-    verbose && @info "Some statistics about the solution:" students_per_project students_per_teacher ranking_distribution
+    verbose &&
+        @info "Some statistics about the solution:" students_per_project students_per_teacher ranking_distribution
     output = DataFrame(
-            student = student_names,
-            project = [found_project_assignments[s] for s in student_names],
-            project_name = [projects[found_project_assignments[s]] for s in student_names],
-            ranking = numerical_ranking_of_assigned,
-        )
+        student = student_names,
+        project = [found_project_assignments[s] for s in student_names],
+        project_name = [projects[found_project_assignments[s]] for s in student_names],
+        ranking = numerical_ranking_of_assigned,
+    )
     CSV.write(output_fname, output)
     verbose && @info "Allocations saved to `$output_fname`."
     return output
 end
 
-function load_and_validate_data(raw_input, type; verbose=true)
+function load_and_validate_data(raw_input, type; verbose = true)
     data = load_data(raw_input, type; verbose)
     if type == :choices
         clean_indices = [1]
@@ -211,13 +215,16 @@ function load_and_validate_data(raw_input, type; verbose=true)
     return data
 end
 
-function load_data(raw_input::String, type; verbose=true)
-    verbose && @info "Assuming $raw_input is a csv file with no header (data starting at the first row)"
+function load_data(raw_input::String, type; verbose = true)
+    verbose &&
+        @info "Assuming $raw_input is a csv file with no header (data starting at the first row)"
     if type == :choices
-        verbose && @info "   - Assuming first column is student name, and the rest are project choices (integer)"
+        verbose &&
+            @info "   - Assuming first column is student name, and the rest are project choices (integer)"
         types = (i, _) -> i == 1 ? String : Int
     else
-        verbose && @info "   - Assuming first column is teacher name, and the second column is project name"
+        verbose &&
+            @info "   - Assuming first column is teacher name, and the second column is project name"
         types = (_, _) -> String
     end
     return CSV.read(raw_input, DataFrame; header = 0, types, strict = true)

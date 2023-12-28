@@ -11,6 +11,17 @@ using OrderedCollections: OrderedDict
 using Comonicon: @main
 
 """
+    projalloc --choices CHOICES
+              --projects PROJECTS
+              [--output "project_allocations.csv"]
+              [--overall_objective "happiness - 0.5 * load"]
+              [--rank_to_happiness "10 - 2^(ranking - 1) + 1"]
+              [--assignments_to_load "num_assigned^2"]
+              [--optimizer_time_limit 5]
+              [--max_students_per_project 4]
+              [--max_students_per_teacher 12]
+              [--silent]
+
 # Intro
 
 Compute optimal project allocations for student projects, using two csv files.

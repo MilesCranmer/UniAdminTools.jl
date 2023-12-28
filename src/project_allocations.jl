@@ -11,6 +11,8 @@ using OrderedCollections: OrderedDict
 using Comonicon: @main
 
 """
+# Intro
+
 Compute optimal project allocations for student projects, using two csv files.
 
 # Options
@@ -19,18 +21,18 @@ Compute optimal project allocations for student projects, using two csv files.
    should be the student name, and the rest should be project choices (integer).
 - `--projects`: A csv file with no header (data starting at the first row). The first column
    should be the teacher name, and the second column should be the project name.
-- `--output`: The filename to save the output to.
-- `--overall_objective`: A function that takes the total happiness and the total
+- `--output <"project_allocations.csv"::String>`: The filename to save the output to.
+- `--overall_objective <"happiness - 0.5 * load"::String>`: A function that takes the total happiness and the total
     load and returns a single number. This will be maximized.
-- `--rank_to_happiness`: Convert a student-assigned ranking into a `happiness`,
+- `--rank_to_happiness <"10 - 2^(ranking - 1) + 1"::String>`: Convert a student-assigned ranking into a `happiness`,
     which will be summed over students.
-- `--assignments_to_load`: A function that takes the number of students assigned
+- `--assignments_to_load <"num_assigned^2"::String>`: A function that takes the number of students assigned
     to each project and returns a number. This will be summed over projects.
-- `--optimizer_time_limit`: How long to spend optimizing the project allocations.
+- `--optimizer_time_limit <5::Int>`: How long to spend optimizing the project allocations.
     Should usually find it pretty quickly (within 5 seconds), but you might try increasing
     this to see if it changes the results.
-- `--max_students_per_project`: The maximum number of students that can be assigned to a project.
-- `--max_students_per_teacher`: The maximum number of students that can be assigned to a teacher.
+- `--max_students_per_project <4::Int>`: The maximum number of students that can be assigned to a project.
+- `--max_students_per_teacher <12::Int>`: The maximum number of students that can be assigned to a teacher.
 
 # Flags
 
@@ -52,9 +54,9 @@ Compute optimal project allocations for student projects, using two csv files.
         choices,
         projects;
         output_fname = output,
-        overall_objective = eval(Meta.parse(overall_objective)),
-        rank_to_happiness = eval(Meta.parse(rank_to_happiness)),
-        assignments_to_load = eval(Meta.parse(assignments_to_load)),
+        overall_objective = eval(Meta.parse("(happiness, load) -> " * overall_objective)),
+        rank_to_happiness = eval(Meta.parse("ranking -> " * rank_to_happiness)),
+        assignments_to_load = eval(Meta.parse("num_assigned -> " * assignments_to_load)),
         optimizer_time_limit,
         max_students_per_project,
         max_students_per_teacher,
@@ -162,7 +164,7 @@ function _optimize_project_allocations(
     # that this never happens.
     student_happiness = [
         let raw_out = findfirst(==(p), Vector(choices[s, :]))
-            (raw_out === nothing ? -100_000.0 : float(rank_to_happiness(raw_out)))
+            (raw_out === nothing ? -100_000.0 : float(Base.invokelatest(rank_to_happiness, raw_out)))
         end for s = 1:n_students, p = 1:n_projects
     ]
     verbose && @info "Computed student happiness matrix."
@@ -211,8 +213,8 @@ function _optimize_project_allocations(
 
     verbose && @info "Creating objective as combination of happiness and load."
     @expression(model, total_happiness, sum(assign .* student_happiness))
-    @expression(model, project_load, sum(assignments_to_load.(sum(assign, dims = 1))))
-    @objective(model, Max, overall_objective(total_happiness, project_load))
+    @expression(model, project_load, sum(Base.invokelatest(assignments_to_load, row) for row in sum(assign, dims = 1)))
+    @objective(model, Max, Base.invokelatest(overall_objective, total_happiness, project_load))
 
     verbose && @info "Model definition complete:" model
 

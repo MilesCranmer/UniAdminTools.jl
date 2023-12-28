@@ -4,8 +4,8 @@ using Aqua
 using Suppressor
 
 @testset "Code quality (Aqua.jl)" begin
-    Aqua.test_all(UniAdminTools; ambiguities=false)
-    Aqua.test_ambiguities(UniAdminTools; recursive=false)
+    Aqua.test_all(UniAdminTools; ambiguities = false)
+    Aqua.test_ambiguities(UniAdminTools; recursive = false)
 end
 
 @testset "Project allocations" begin
@@ -58,7 +58,7 @@ end
         @test out[!, :ranking] == [1, 1, 1, 1]
 
         @test occursin(
-            r"Assuming test/example_project_choices.csv is a csv file with no header",
+            r"Assuming .*example_project_choices.csv is a csv file with no header",
             log,
         )
         @test occursin(r"Some statistics about the solution:", log)
@@ -105,10 +105,6 @@ end
         @test out[!, :project] == [2, 1, 3, 4, 3, 1]
         @test out[!, :project_name] == ["P2", "P1", "P3", "P4", "P3", "P1"]
 
-        @test !occursin(
-            r"Assuming test/example_project_choices.csv is a csv file with no header",
-            log,
-        )
+        @test !occursin(r"is a csv file with no header", log)
     end
-
 end

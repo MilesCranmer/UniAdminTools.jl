@@ -10,7 +10,7 @@ Robust optimisation tool for academic administrative duties:
 - Allocating projects among students (`projalloc`)
   - Incorporates ranked preferences and per-project saturation constraints
   - Based on mixed-integer programming, using JuMP with Ipopt + HiGHS + Juniper
-- Robust aggregation of committee scores for job candidates (`scoremerge`)
+- Robust aggregation of committee scores for job candidates (`mergescore`)
   - Accounts for sparsity, noise, uncertainty, and different scoring scales among committee members
   - Bayesian inference scheme using TuringLang and NUTS
 

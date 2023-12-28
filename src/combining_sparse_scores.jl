@@ -1,4 +1,4 @@
-module ScoreMerge
+module MergeScore
 
 using XLSX: XLSX
 using DataFrames: AbstractDataFrame, DataFrame
@@ -10,7 +10,7 @@ using Turing: Uniform, Normal, Truncated, arraydist
 using Turing: NUTS, SMC
 
 """
-    scoremerge --input INPUT
+    mergescore --input INPUT
                [--sheet-name SHEET_NAME]
                [--scorer-range SCORER_RANGE]
                [--candidate-range CANDIDATE_RANGE]
@@ -49,7 +49,7 @@ Estimate true scores of candidates from sparse observations by committee members
 
 - `--silent`: Whether to suppress output.
 """
-@main function scoremerge(;
+@main function mergescore(;
     input::String,
     sheet_name::Union{Nothing,String} = nothing,
     scorer_range::Union{Nothing,String} = nothing,

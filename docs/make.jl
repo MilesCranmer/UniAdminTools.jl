@@ -11,11 +11,11 @@ makedocs(;
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
         canonical = "https://MilesCranmer.github.io/UniAdminTools.jl",
-        edit_link = "main",
+        edit_link = "master",
         assets = String[],
     ),
     pages = ["Home" => "index.md"],
     warnonly = true,
 )
 
-deploydocs(; repo = "github.com/MilesCranmer/UniAdminTools.jl", devbranch = "main")
+deploydocs(; repo = "github.com/MilesCranmer/UniAdminTools.jl", devbranch = "master")

@@ -29,7 +29,7 @@ Estimate true scores of candidates from sparse observations by committee members
 
 # Args
 
-- `input`: A csv or xlsx file with candidates and committee scores between 1 and 10, with
+- `input`: A csv or xlsx file with candidates and committee scores (default is between 1 and 10), with
     unranked candidate-scorer pairs left blank.
 
 # Options

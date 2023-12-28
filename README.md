@@ -5,7 +5,7 @@
 [![Coverage](https://coveralls.io/repos/github/MilesCranmer/UniAdminTools.jl/badge.svg?branch=main)](https://coveralls.io/github/MilesCranmer/UniAdminTools.jl?branch=main)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-Robust optimisation for various academic administrative duties
+Rigorous optimisation tools for academic administrative duties
 
 ## Installation
 

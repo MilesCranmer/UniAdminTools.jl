@@ -217,7 +217,7 @@ function load_data(raw_input::String, type)
         @info "   - Assuming first column is teacher name, and the second column is project name"
         types = (_, _) -> String
     end
-    return CSV.read(raw_input, DataFrame; header = 0, types)
+    return CSV.read(raw_input, DataFrame; header = 0, types, strict = true)
 end
 
 

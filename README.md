@@ -28,3 +28,6 @@ which should create some binaries in your `~/.julia/bin` folder that can be exec
 ```bash
 projalloc --help
 ```
+
+See the docs for more details, including other
+functions: [astroautomata.com/UniAdminTools.jl/dev](https://astroautomata.com/UniAdminTools.jl/dev/)

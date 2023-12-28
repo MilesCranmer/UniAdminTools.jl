@@ -21,7 +21,7 @@ Find optimal project allocations using HiGHS, Ipopt, and Juniper.
 - `projects`: A table or dataframe (or a filename) where each row is a project. The first
    column should be the project name, and the second column the teacher name. The row index
    of the project is its identifier in the `choices` table.
-- `teachers`: A vector of teacher names, e.g. `["A", "B", "C", "D"]`.
+- `output_fname`: The filename to save the output to. The default is `project_allocations.csv`.
 - `overall_objective`: A function that takes the total happiness and the total
     load and returns a single number. The default is to maximize happiness minus
     0.5 times the load.
@@ -30,12 +30,15 @@ Find optimal project allocations using HiGHS, Ipopt, and Juniper.
     to each project and returns a number. The default is to return the square of
     the number of students.
 - `optimizer_time_limit`: How long to spend optimizing the project allocations.
-  Should usually find it pretty quickly (within 5 seconds), but you might try increasing
-  this to see if it changes the results.
+    Should usually find it pretty quickly (within 5 seconds), but you might try increasing
+    this to see if it changes the results.
+- `max_students_per_project`: The maximum number of students that can be assigned to a project.
+- `max_students_per_teacher`: The maximum number of students that can be assigned to a teacher.
 """
 function optimize_project_allocations(
     choices,
     projects;
+    output_fname = "project_allocations.csv",
     overall_objective = (happiness, load) -> happiness - 0.5 * load,
     rank_to_happiness = ranking -> 10 - 2^(ranking - 1) + 1,
     assignments_to_load = num_assigned -> num_assigned^2,
@@ -46,6 +49,7 @@ function optimize_project_allocations(
     return _optimize_project_allocations(
         load_and_validate_data(choices, :choices),
         load_and_validate_data(projects, :projects);
+        output_fname,
         overall_objective,
         rank_to_happiness,
         assignments_to_load,
@@ -59,6 +63,7 @@ end
 function _optimize_project_allocations(
     choices_data::AbstractDataFrame,
     projects_data::AbstractDataFrame;
+    output_fname,
     overall_objective,
     rank_to_happiness,
     assignments_to_load,
@@ -157,12 +162,12 @@ function _optimize_project_allocations(
     if any(isnothing, values(found_project_assignments))
         error("Some students were not assigned to a project! Quitting.")
     end
-    ranking_of_assigned = [
-        "Rank " * string(
-            findfirst(==(found_project_assignments[student]), Vector(choices[i, :])),
-        ) for (i, student) in enumerate(student_names)
+    numerical_ranking_of_assigned = [
+        findfirst(==(found_project_assignments[student]), Vector(choices[i, :])) for
+        (i, student) in enumerate(student_names)
     ]
-    ranking_distribution = countmap(ranking_of_assigned)
+    str_ranking_of_assigned = (i -> "Rank $i").(numerical_ranking_of_assigned)
+    ranking_distribution = countmap(str_ranking_of_assigned)
     students_per_project = OrderedDict(
         project => round(Int, value(sum(assign[:, project_with_index[project]]))) for
         project in keys(project_with_index)
@@ -175,52 +180,28 @@ function _optimize_project_allocations(
     )
 
     @info "Some statistics about the solution:" students_per_project students_per_teacher ranking_distribution
-
-    #=
-    # which we can see is <= 4
-    for (project, n_students) in zip(projects, students_per_project)
-        println("$project: $n_students")
-    end
-    # Plotted version of this (bar plot, with xlabel = project name)
-    using Plots
-    bar(1:n_projects, students_per_project', xlabel="Project", ylabel="Number of students")
-    # Label the projects (rotated text):
-    xticks!(1:n_projects, projects, rotation=90)
-    # Save the figure to a file:
-    savefig("students_per_project_with_load.png")
-    # -
-
-    # Then the number of students per teacher:
-    students_per_teacher = [value.(sum(assign[:, findall(==(k), teacher_assignments)])) for k in 1:n_teachers]
-    # which we can see is at most 8
-    for (teacher, n_students) in zip(teachers, students_per_teacher)
-        println("$teacher: $n_students")
-    end
-
-    # Next, let's see the distribution of happiness:
-    final_happiness = value.(sum(assign .* student_happiness, dims=2)[:])
-    countmap(final_happiness)
-    # Which we can see has 96 students with their 1st choice
-    # and 4 students with their 2nd choice.
-
-    for student in 1:n_students
-        project_choice = findall(==(1.0), value.(assign[student, :]))[1]
-        println("$project_choice")
-    end
-    =#
+    CSV.write(
+        output_fname,
+        DataFrame(
+            student = student_names,
+            project = [found_project_assignments[s] for s in student_names],
+            project_name = [projects[found_project_assignments[s]] for s in student_names],
+            ranking = numerical_ranking_of_assigned,
+        ),
+    )
+    @info "Allocations saved to `$output_fname`."
+    return nothing
 end
 
 function load_and_validate_data(raw_input, type)
     data = load_data(raw_input, type)
     if type == :choices
-        @info "Lower-casing names and removing grammar"
         clean_indices = [1]
     elseif type == :projects
-        @info "Lower-casing teacher and project names and removing grammar"
         clean_indices = [1, 2]
     end
     for i in clean_indices
-        data[!, i] .= replace.(lowercase.(data[!, i]), r"[\.,]" => "")
+        # Remove spaces at start and end
         data[!, i] .= replace.(data[!, i], r"\s+$" => "")
         data[!, i] .= replace.(data[!, i], r"^\s+" => "")
     end

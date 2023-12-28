@@ -4,7 +4,12 @@ using Aqua
 using Suppressor
 
 @testset "Code quality (Aqua.jl)" begin
-    Aqua.test_all(UniAdminTools; ambiguities = false, deps_compat=false)
+    Aqua.test_all(
+        UniAdminTools;
+        ambiguities = false,
+        deps_compat = false,
+        stale_deps = false,
+    )
     Aqua.test_ambiguities(UniAdminTools; recursive = false)
 end
 

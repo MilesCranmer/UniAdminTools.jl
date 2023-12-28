@@ -12,7 +12,7 @@ Rigorous optimisation tools for academic administrative duties:
   - Based on mixed-integer programming, using JuMP with Ipopt + HiGHS + Juniper
 - Robust aggregation of committee scores for job candidates (`scoremerge`)
   - Accounts for sparsity, noise, uncertainty, and different scoring scales among committee members
-  - Based on Bayesian inference, using TuringLang and NUTS
+  - Bayesian inference scheme using TuringLang and NUTS
 
 
 ## Installation

@@ -34,6 +34,7 @@ Find optimal project allocations using HiGHS, Ipopt, and Juniper.
     this to see if it changes the results.
 - `max_students_per_project`: The maximum number of students that can be assigned to a project.
 - `max_students_per_teacher`: The maximum number of students that can be assigned to a teacher.
+- `verbose`: Whether to print out information about the optimization process.
 """
 function optimize_project_allocations(
     choices,
@@ -45,10 +46,11 @@ function optimize_project_allocations(
     optimizer_time_limit = 5,
     max_students_per_project = 4,
     max_students_per_teacher = 12,
+    verbose = true,
 )
     return _optimize_project_allocations(
-        load_and_validate_data(choices, :choices),
-        load_and_validate_data(projects, :projects);
+        load_and_validate_data(choices, :choices; verbose),
+        load_and_validate_data(projects, :projects; verbose);
         output_fname,
         overall_objective,
         rank_to_happiness,
@@ -56,6 +58,7 @@ function optimize_project_allocations(
         optimizer_time_limit,
         max_students_per_project,
         max_students_per_teacher,
+        verbose,
     )
 end
 
@@ -70,13 +73,14 @@ function _optimize_project_allocations(
     optimizer_time_limit,
     max_students_per_project,
     max_students_per_teacher,
+    verbose,
 )
 
     projects = projects_data[!, 2]
     project_with_index = OrderedDict(project => k for (k, project) in enumerate(projects))
     n_projects = length(projects)
 
-    @info "Found $n_projects projects:" project_with_index
+    verbose && @info "Found $n_projects projects:" project_with_index
 
     teachers = unique(projects_data[!, 1])
     n_teachers = length(teachers)
@@ -85,18 +89,18 @@ function _optimize_project_allocations(
         teacher in teachers
     )
 
-    @info "Found $n_teachers teachers with assignments:" teacher_assignments
+    verbose && @info "Found $n_teachers teachers with assignments:" teacher_assignments
 
     student_names = choices_data[!, 1]
     concat_student_names = join(student_names, "; ")
     n_students = length(student_names)
 
-    @info "Found $n_students students:" concat_student_names
+    verbose && @info "Found $n_students students:" concat_student_names
 
     choices = choices_data[!, 2:end]
     n_choices = size(choices, 2)
 
-    @info "Found $n_choices choices per student."
+    verbose && @info "Found $n_choices choices per student."
 
     # Let's say that happiness is linearly decreasing with the ranking of the
     # project. If the student did not choose the project, we assign -100,000 to make sure
@@ -106,24 +110,25 @@ function _optimize_project_allocations(
             (raw_out === nothing ? -100_000.0 : float(rank_to_happiness(raw_out)))
         end for s = 1:n_students, p = 1:n_projects
     ]
-    @info "Computed student happiness matrix."
+    verbose && @info "Computed student happiness matrix."
 
-    ipopt = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0)
+    ipopt = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => Int(verbose))
     highs = optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false)
     juniper = optimizer_with_attributes(
         Juniper.Optimizer,
         "nl_solver" => ipopt,
         "mip_solver" => highs,
         "time_limit" => optimizer_time_limit,
+        "log_levels" => verbose ? [:Table, :Info] : Symbol[]
     )
     optimizer = juniper
     model = Model(optimizer)
-    @info "Loaded optimizer with `juniper` for local optimization, `highs` for MIP, and `ipopt` for NLP."
+    verbose && @info "Loaded optimizer with `juniper` for local optimization, `highs` for MIP, and `ipopt` for NLP."
 
     # Student assignment matrix
     @variable(model, assign[1:n_students, 1:n_projects], Bin)
 
-    @info "Initialising to first choice for all students."
+    verbose && @info "Initialising to first choice for all students."
     for s = 1:n_students, p = 1:n_projects
         if p == choices[s, 1]
             set_start_value(assign[s, p], 1)
@@ -132,33 +137,33 @@ function _optimize_project_allocations(
         end
     end
 
-    @info "Creating constraints:"
+    verbose && @info "Creating constraints:"
 
     @constraint(model, sum(assign, dims = 2) .== 1)
-    @info "    - Students need 1 project."
+    verbose && @info "    - Students need 1 project."
 
     @constraint(model, sum(assign, dims = 1) .<= max_students_per_project)
-    @info "    - Each project can have at most $max_students_per_project students."
+    verbose && @info "    - Each project can have at most $max_students_per_project students."
 
     for k = 1:n_teachers
         project_idx = findall(==(k), teacher_assignments)
         @constraint(model, sum(assign[:, project_idx]) .<= max_students_per_teacher)
     end
-    @info "    - Each supervisor can have at most $max_students_per_teacher students."
+    verbose && @info "    - Each supervisor can have at most $max_students_per_teacher students."
 
-    @info "Creating objective as combination of happiness and load."
+    verbose && @info "Creating objective as combination of happiness and load."
     @expression(model, total_happiness, sum(assign .* student_happiness))
     @expression(model, project_load, sum(assignments_to_load.(sum(assign, dims = 1))))
     @objective(model, Max, overall_objective(total_happiness, project_load))
 
-    @info "Model definition complete:" model
+    verbose && @info "Model definition complete:" model
 
-    @info "Optimising for up to $optimizer_time_limit seconds of solve time..."
+    verbose && @info "Optimising for up to $optimizer_time_limit seconds of solve time..."
     results = optimize!(model)
     found_project_assignments = OrderedDict(
         student_names[s] => findfirst(==(1.0), value.(assign[s, :])) for s = 1:n_students
     )
-    @info "Done!" found_project_assignments
+    verbose && @info "Done!" found_project_assignments
     if any(isnothing, values(found_project_assignments))
         error("Some students were not assigned to a project! Quitting.")
     end
@@ -179,22 +184,20 @@ function _optimize_project_allocations(
         ) for teacher in teachers
     )
 
-    @info "Some statistics about the solution:" students_per_project students_per_teacher ranking_distribution
-    CSV.write(
-        output_fname,
-        DataFrame(
+    verbose && @info "Some statistics about the solution:" students_per_project students_per_teacher ranking_distribution
+    output = DataFrame(
             student = student_names,
             project = [found_project_assignments[s] for s in student_names],
             project_name = [projects[found_project_assignments[s]] for s in student_names],
             ranking = numerical_ranking_of_assigned,
-        ),
-    )
-    @info "Allocations saved to `$output_fname`."
-    return nothing
+        )
+    CSV.write(output_fname, output)
+    verbose && @info "Allocations saved to `$output_fname`."
+    return output
 end
 
-function load_and_validate_data(raw_input, type)
-    data = load_data(raw_input, type)
+function load_and_validate_data(raw_input, type; verbose=true)
+    data = load_data(raw_input, type; verbose)
     if type == :choices
         clean_indices = [1]
     elseif type == :projects
@@ -208,13 +211,13 @@ function load_and_validate_data(raw_input, type)
     return data
 end
 
-function load_data(raw_input::String, type)
-    @info "Assuming $raw_input is a csv file with no header (data starting at the first row)"
+function load_data(raw_input::String, type; verbose=true)
+    verbose && @info "Assuming $raw_input is a csv file with no header (data starting at the first row)"
     if type == :choices
-        @info "   - Assuming first column is student name, and the rest are project choices (integer)"
+        verbose && @info "   - Assuming first column is student name, and the rest are project choices (integer)"
         types = (i, _) -> i == 1 ? String : Int
     else
-        @info "   - Assuming first column is teacher name, and the second column is project name"
+        verbose && @info "   - Assuming first column is teacher name, and the second column is project name"
         types = (_, _) -> String
     end
     return CSV.read(raw_input, DataFrame; header = 0, types, strict = true)

@@ -9,6 +9,14 @@ Documentation for [UniAdminTools](https://github.com/MilesCranmer/UniAdminTools.
 ```@index
 ```
 
-```@autodocs
-Modules = [UniAdminTools]
+## CLI
+
+```@docs
+projalloc
+```
+
+## Internal
+
+```@docs
+optimize_project_allocations
 ```

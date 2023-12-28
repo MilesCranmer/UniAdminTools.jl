@@ -1,4 +1,4 @@
-module ProjectAllocations
+module ProjAlloc
 
 using JuMP  # Optimization language
 using StatsBase: countmap  # For counting output
@@ -8,6 +8,61 @@ using Ipopt: Ipopt
 using HiGHS: HiGHS
 using Juniper: Juniper
 using OrderedCollections: OrderedDict
+using Comonicon: @main
+
+"""
+Compute optimal project allocations for student projects, using two csv files.
+
+# Options
+
+- `--choices`: A csv file with no header (data starting at the first row). The first column
+   should be the student name, and the rest should be project choices (integer).
+- `--projects`: A csv file with no header (data starting at the first row). The first column
+   should be the teacher name, and the second column should be the project name.
+- `--output`: The filename to save the output to.
+- `--overall_objective`: A function that takes the total happiness and the total
+    load and returns a single number. This will be maximized.
+- `--rank_to_happiness`: Convert a student-assigned ranking into a `happiness`,
+    which will be summed over students.
+- `--assignments_to_load`: A function that takes the number of students assigned
+    to each project and returns a number. This will be summed over projects.
+- `--optimizer_time_limit`: How long to spend optimizing the project allocations.
+    Should usually find it pretty quickly (within 5 seconds), but you might try increasing
+    this to see if it changes the results.
+- `--max_students_per_project`: The maximum number of students that can be assigned to a project.
+- `--max_students_per_teacher`: The maximum number of students that can be assigned to a teacher.
+
+# Flags
+
+- `--silent`: Don't print out information about the optimization process.
+"""
+@main function projalloc(;
+    choices::String,
+    projects::String,
+    output::String = "project_allocations.csv",
+    overall_objective::String = "happiness - 0.5 * load",
+    rank_to_happiness::String = "10 - 2^(ranking - 1) + 1",
+    assignments_to_load::String = "num_assigned^2",
+    optimizer_time_limit::Int = 5,
+    max_students_per_project::Int = 4,
+    max_students_per_teacher::Int = 12,
+    silent::Bool = false,
+)
+    out = optimize_project_allocations(
+        choices,
+        projects;
+        output_fname = output,
+        overall_objective = eval(Meta.parse(overall_objective)),
+        rank_to_happiness = eval(Meta.parse(rank_to_happiness)),
+        assignments_to_load = eval(Meta.parse(assignments_to_load)),
+        optimizer_time_limit,
+        max_students_per_project,
+        max_students_per_teacher,
+        verbose = !silent,
+    )
+    !silent && println(out)
+    return nothing
+end
 
 
 """
@@ -49,8 +104,8 @@ function optimize_project_allocations(
     verbose = true,
 )
     return _optimize_project_allocations(
-        load_and_validate_data(choices, :choices; verbose),
-        load_and_validate_data(projects, :projects; verbose);
+        _load_and_validate_data(choices, :choices; verbose),
+        _load_and_validate_data(projects, :projects; verbose);
         output_fname,
         overall_objective,
         rank_to_happiness,
@@ -200,8 +255,8 @@ function _optimize_project_allocations(
     return output
 end
 
-function load_and_validate_data(raw_input, type; verbose = true)
-    data = load_data(raw_input, type; verbose)
+function _load_and_validate_data(raw_input, type; verbose = true)
+    data = _load_data(raw_input, type; verbose)
     if type == :choices
         clean_indices = [1]
     elseif type == :projects
@@ -215,7 +270,7 @@ function load_and_validate_data(raw_input, type; verbose = true)
     return data
 end
 
-function load_data(raw_input::String, type; verbose = true)
+function _load_data(raw_input::String, type; verbose = true)
     verbose &&
         @info "Assuming $raw_input is a csv file with no header (data starting at the first row)"
     if type == :choices

@@ -1,7 +1,7 @@
 module UniAdminTools
 
-include("project_allocations.jl")
-include("combining_sparse_scores.jl")
+include("projalloc.jl")
+include("mergescore.jl")
 
 using Reexport: @reexport
 @reexport using .ProjAlloc: optimize_project_allocations, projalloc

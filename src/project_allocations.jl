@@ -48,6 +48,45 @@ Compute optimal project allocations for student projects, using two csv files.
 # Flags
 
 - `--silent`: Don't print out information about the optimization process.
+
+# Examples
+
+Say that we create a file `choices.csv` with student preferences (first column is student name,
+second column is first choice, third column is second choice, etc.):
+
+```csv
+"Student A",1,2,4
+"Student B",1,3,4
+"Student C",5,3,4
+"Student D",6,1,2
+```
+
+and then another file `projects.csv` with project listings (first column is teacher name,
+second column is project name):
+
+```csv
+"Teacher A","Project A1"
+"Teacher A","Project A2"
+"Teacher B","B 3"
+"Teacher C","C4"
+"Teacher D","D project 1"
+"Teacher D","D project 2"
+"Teacher D","D project 3"
+```
+
+**Note that the order of the projects here is used to set the index
+of each project**. This is used for matching integers with the student preferences file.
+
+Then we can run the following command:
+
+```bash
+projalloc --choices choices.csv --projects projects.csv \
+          --output allocations.csv \
+          --overall-objective "happiness - 0.5 * load"
+```
+
+which will create a csv file `allocations.csv` with
+an optimal allocation of student projects.
 """
 @main function projalloc(;
     choices::String,

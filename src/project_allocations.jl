@@ -175,7 +175,10 @@ function _optimize_project_allocations(
     # that this never happens.
     student_happiness = [
         let raw_out = findfirst(==(p), Vector(choices[s, :]))
-            (raw_out === nothing ? -100_000.0 : float(Base.invokelatest(rank_to_happiness, raw_out)))
+            (
+                raw_out === nothing ? -100_000.0 :
+                float(Base.invokelatest(rank_to_happiness, raw_out))
+            )
         end for s = 1:n_students, p = 1:n_projects
     ]
     verbose && @info "Computed student happiness matrix."
@@ -224,8 +227,16 @@ function _optimize_project_allocations(
 
     verbose && @info "Creating objective as combination of happiness and load."
     @expression(model, total_happiness, sum(assign .* student_happiness))
-    @expression(model, project_load, sum(Base.invokelatest(assignments_to_load, row) for row in sum(assign, dims = 1)))
-    @objective(model, Max, Base.invokelatest(overall_objective, total_happiness, project_load))
+    @expression(
+        model,
+        project_load,
+        sum(Base.invokelatest(assignments_to_load, row) for row in sum(assign, dims = 1))
+    )
+    @objective(
+        model,
+        Max,
+        Base.invokelatest(overall_objective, total_happiness, project_load)
+    )
 
     verbose && @info "Model definition complete:" model
 

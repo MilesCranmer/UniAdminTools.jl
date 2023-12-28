@@ -13,6 +13,7 @@ Documentation for [UniAdminTools](https://github.com/MilesCranmer/UniAdminTools.
 
 ```@docs
 projalloc
+scoremerge
 ```
 
 ## Internal

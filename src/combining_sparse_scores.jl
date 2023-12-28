@@ -10,7 +10,7 @@ using Turing: Uniform, Normal, Truncated, arraydist
 using Turing: NUTS, SMC
 
 """
-    mergescore --input INPUT
+    mergescore input
                [--sheet-name SHEET_NAME]
                [--scorer-range SCORER_RANGE]
                [--candidate-range CANDIDATE_RANGE]
@@ -27,10 +27,13 @@ using Turing: NUTS, SMC
 
 Estimate true scores of candidates from sparse observations by committee members.
 
+# Args
+
+- `input`: A csv or xlsx file with candidates and committee scores between 1 and 10, with
+    unranked candidate-scorer pairs left blank.
+
 # Options
 
-- `--input`: A csv or xlsx file with candidates and committee scores between 1 and 10, with
-    unranked candidate-scorer pairs left blank.
 - `--sheet-name`: If an `xlsx` file is passed, the name of the sheet to read from (such as `"Sheet 1"`).
 - `--scorer-range`: If an `xlsx` file is passed, the range of cells containing the names of the scorers
     (such as `"A2:A10"`).
@@ -43,18 +46,46 @@ Estimate true scores of candidates from sparse observations by committee members
 - `--n-chains`: The number of chains to run.
 - `--n-samples`: The number of samples to draw from each chain.
 - `--n-adapts`: The number of samples to use for warming up.
-- `--sampler`: The sampler to use. Can be `"NUTS()"` or `"SMC()"`.
+- `--sampler`: The sampler to use. Can be, for example, `"NUTS()"` or `"SMC()"`.
+- `--lower-true-score`: The lower bound of the uniform prior on the true scores.
+- `--upper-true-score`: The upper bound of the uniform prior on the true scores.
+- `--mean-bias`: The mean of the normal prior on the bias of the scorers.
+- `--stdev-bias`: The standard deviation of the normal prior on the bias of the scorers.
+- `--mean-scale`: The mean of the normal prior on the scale of the scorers.
+- `--stdev-scale`: The standard deviation of the normal prior on the scale of the scorers.
 
 # Flags
 
 - `--silent`: Whether to suppress output.
+
+# Example
+
+Say we put all the data into a file `data.csv`:
+
+```csv
+candidates,Scorer AA,BB,DD,FF,HH,LL,MM,avg,spread
+Candidate 1,,7.9,,8.5,8.2,8.4,,8,0.26
+Candidate 2,4.2,7.4,3.7,,,,2.8,5,1.63
+Candidate 3,,4.4,,5.2,5.7,,5.2,5,0.48
+Candidate First name Last name,9.6,,7.6,,8,,,9,1.03
+Candidate 5,,,,,,,,,
+```
+
+We can then create estimates for true scores with:
+
+```bash
+mergescore data.csv --n-chains 5 --n-samples 3000 --output my_output.csv
+```
+
+which will create a file `my_output.csv` with estimates for true
+scores of each candidate.
 """
-@main function mergescore(;
-    input::String,
-    sheet_name::Union{Nothing,String} = nothing,
-    scorer_range::Union{Nothing,String} = nothing,
-    candidate_range::Union{Nothing,String} = nothing,
-    data_range::Union{Nothing,String} = nothing,
+@main function mergescore(
+    input::String;
+    sheet_name::String = "",
+    scorer_range::String = "",
+    candidate_range::String = "",
+    data_range::String = "",
     output::String = "candidate_info.csv",
     scorer_info::String = "scorer_info.csv",
     n_chains::Int = 6,
@@ -62,6 +93,12 @@ Estimate true scores of candidates from sparse observations by committee members
     n_adapts::Int = 500,
     sampler::String = "NUTS()",
     silent::Bool = false,
+    lower_true_score::Float64 = 1.0,
+    upper_true_score::Float64 = 10.0,
+    mean_bias::Float64 = 0.0,
+    stdev_bias::Float64 = 1.0,
+    mean_scale::Float64 = 1.0,
+    stdev_scale::Float64 = 0.3,
 )
     sampler = eval(Meta.parse(sampler))
     return estimated_merged_scores(
@@ -77,6 +114,12 @@ Estimate true scores of candidates from sparse observations by committee members
         n_adapts,
         sampler,
         verbose = !silent,
+        lower_true_score,
+        upper_true_score,
+        mean_bias,
+        stdev_bias,
+        mean_scale,
+        stdev_scale,
     )
 end
 
@@ -93,6 +136,12 @@ function estimated_merged_scores(
     n_adapts = 500,
     sampler = NUTS(),
     verbose = true,
+    lower_true_score::Float64 = 1.0,
+    upper_true_score::Float64 = 10.0,
+    mean_bias::Float64 = 0.0,
+    stdev_bias::Float64 = 1.0,
+    mean_scale::Float64 = 1.0,
+    stdev_scale::Float64 = 0.3,
 )
     data = load_and_validate_data(
         input,
@@ -111,6 +160,12 @@ function estimated_merged_scores(
         n_adapts,
         sampler,
         verbose,
+        lower_true_score,
+        upper_true_score,
+        mean_bias,
+        stdev_bias,
+        mean_scale,
+        stdev_scale,
     )
 end
 
@@ -123,7 +178,7 @@ function load_and_validate_data(
     verbose = true,
 )
     if endswith(input, ".xlsx")
-        @assert !any(isnothing, (sheet_name, scorer_range, candidate_range, data_range)) "Must specify sheet_name, scorer_range, candidate_range, and data_range when reading from an xlsx file."
+        @assert !any(isempty, (sheet_name, scorer_range, candidate_range, data_range)) "Must specify sheet_name, scorer_range, candidate_range, and data_range when reading from an xlsx file."
         verbose && @info "Assuming $input is an xlsx file, and using passed ranges."
         spreadsheet = XLSX.readxlsx(input)
         sheet = spreadsheet[sheet_name]
@@ -144,7 +199,7 @@ function load_and_validate_data(
             (:candidate_range, candidate_range),
             (:data_range, data_range),
         )
-            value === nothing && continue
+            isempty(value) && continue
             @warn "Ignoring passed argument for $(s) because $input is not an xlsx file."
         end
         return CSV.read(
@@ -165,6 +220,12 @@ function _estimate_merged_scores(
     n_adapts,
     sampler,
     verbose,
+    lower_true_score,
+    upper_true_score,
+    mean_bias,
+    stdev_bias,
+    mean_scale,
+    stdev_scale,
 )
     scorers = names(raw_data)[begin+1:end]
     n_scorers = length(scorers)
@@ -175,6 +236,14 @@ function _estimate_merged_scores(
     obs_ij = Matrix{Union{Float64,Missing}}(raw_data[!, begin+1:end])
     verbose && @info "Loaded observations:" obs_ij
 
+    forward_model = create_forward_model(;
+        lower_true_score,
+        upper_true_score,
+        mean_bias,
+        stdev_bias,
+        mean_scale,
+        stdev_scale,
+    )
     model = forward_model(obs_ij)
 
     verbose && @info "Created forward model."
@@ -190,12 +259,6 @@ function _estimate_merged_scores(
         drop_warmup = true,
         verbose,
         progress = true,
-        init_params = Dict(
-            :sigma => 1.0,
-            :true_s => [5.0 for _ = 1:size(obs_ij, 1)],
-            :b => [1.0 for _ = 1:size(obs_ij, 2)],
-            :mu => [0.0 for _ = 1:size(obs_ij, 2)],
-        ),
     )
 
     verbose && @info "Finished sampling. Computing summaries..."
@@ -233,27 +296,37 @@ function _estimate_merged_scores(
     return candidate_info_data
 end
 
-@model function forward_model(obs_ij)
-    n_candidates, n_scorers = size(obs_ij)
+function create_forward_model(;
+    lower_true_score = 1.0,
+    upper_true_score = 10.0,
+    mean_bias = 0.0,
+    stdev_bias = 1.0,
+    mean_scale = 1.0,
+    stdev_scale = 0.3,
+)
+    @model function forward_model(obs_ij)
+        n_candidates, n_scorers = size(obs_ij)
 
-    ### Priors ###
-    # Measurement noise magnitude
-    sigma ~ Uniform(0, 2)
+        ### Priors ###
+        # Measurement noise magnitude
+        sigma ~ Uniform(0, 0.3 * (upper_true_score - lower_true_score))
 
-    # Scales and biases
-    b ~ arraydist([Normal(1.0, 0.3) for _ = 1:n_scorers])
-    mu ~ arraydist([Normal(0, 1) for _ = 1:n_scorers])
+        # Scales and biases
+        b ~ arraydist([Normal(mean_scale, stdev_scale) for _ = 1:n_scorers])
+        mu ~ arraydist([Normal(mean_bias, stdev_bias) for _ = 1:n_scorers])
 
-    # True scores to infer
-    true_s ~ arraydist([Uniform(1, 10) for i = 1:n_candidates])
+        # True scores to infer
+        true_s ~
+            arraydist([Uniform(lower_true_score, upper_true_score) for i = 1:n_candidates])
 
-    ### Noise model ###
-    # (to generate the observations)
-    for i = 1:n_candidates, j = 1:n_scorers
-        if ismissing(obs_ij[i, j])
-            continue # (sparse observations)
+        ### Noise model ###
+        # (to generate the observations)
+        for i = 1:n_candidates, j = 1:n_scorers
+            if ismissing(obs_ij[i, j])
+                continue # (sparse observations)
+            end
+            obs_ij[i, j] ~ Normal(b[j] * (true_s[i] + mu[j]), sigma)
         end
-        obs_ij[i, j] ~ Normal(b[j] * (true_s[i] + mu[j]), sigma)
     end
 end
 

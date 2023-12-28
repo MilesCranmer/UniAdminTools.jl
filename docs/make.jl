@@ -15,7 +15,7 @@ makedocs(;
         assets = String[],
     ),
     pages = ["Home" => "index.md"],
-    warnonly=true,
+    warnonly = true,
 )
 
 deploydocs(; repo = "github.com/MilesCranmer/UniAdminTools.jl", devbranch = "main")

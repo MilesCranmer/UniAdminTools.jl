@@ -1,6 +1,6 @@
 name = "UniAdminTools"
 uuid = "8ce952d8-4570-4d9b-a191-c4e6a1af656b"
-authors = ["MilesCranmer <miles.cranmer@gmail.com> and contributors"]
+authors = ["Miles Cranmer <miles.cranmer@gmail.com> and contributors"]
 version = "0.0.1"
 
 [compat]

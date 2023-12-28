@@ -138,7 +138,7 @@ end
     log = @capture_err begin
         seed!(0)
         data[] = mergescore(
-            input = input_fname,
+            input;
             output = joinpath(tmpdir, "output.csv"),
             scorer_info = joinpath(tmpdir, "scorer_info.csv"),
             n_chains = 5,

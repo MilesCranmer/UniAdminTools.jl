@@ -15,10 +15,10 @@ using OrderedCollections: OrderedDict
 
 Find optimal project allocations using HiGHS, Ipopt, and Juniper.
 
-- `choices`: A table or dataframe (or a filename) where each row is one student's project choices,
+- `choices`: A filename (or data itself) where each row is one student's project choices,
    with the first column being the student name, and the next columns being their choices
    (second column being their first choice).
-- `projects`: A table or dataframe (or a filename) where each row is a project. The first
+- `projects`: A filename (or data itself) where each row is a project. The first
    column should be the project name, and the second column the teacher name. The row index
    of the project is its identifier in the `choices` table.
 - `output_fname`: The filename to save the output to. The default is `project_allocations.csv`.

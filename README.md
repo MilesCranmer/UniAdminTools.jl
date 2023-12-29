@@ -7,7 +7,7 @@
 
 Optimisation tools for academic administrative duties:
 
-- Aggregation of sparse committee scores for job candidates with [`mergescore`](#mergescore)
+- Aggregation of sparse committee scores of {job candidates,proposals,...} with [`mergescore`](#mergescore)
   - Accounts for sparsity, noise, uncertainty, and different scoring scales among committee members
   - Bayesian inference scheme using TuringLang and NUTS
 - Allocating projects among students with [`projalloc`](#projalloc)

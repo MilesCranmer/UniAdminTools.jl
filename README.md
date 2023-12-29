@@ -9,10 +9,10 @@ Optimisation tools for academic administrative duties:
 
 - Aggregation of sparse committee scores of {job candidates,proposals,...} with [`mergescore`](#mergescore)
   - Accounts for sparsity, noise, uncertainty, and different scoring scales among committee members
-  - Bayesian inference scheme using TuringLang and NUTS
+  - Bayesian inference scheme using [TuringLang](https://turinglang.org/stable/) with [DynamicHMC](https://github.com/tpapp/DynamicHMC.jl) for sampling
 - Allocating projects among students with [`projalloc`](#projalloc)
   - Incorporates ranked preferences and per-project saturation constraints
-  - Based on mixed-integer programming, using JuMP with Ipopt + HiGHS + Juniper
+  - Based on mixed-integer programming, using [JuMP](https://jump.dev/) with [Ipopt](https://coin-or.github.io/Ipopt/), [HiGHS](https://highs.dev/), and [Juniper](https://lanl-ansi.github.io/Juniper.jl/stable/) for optimisation
 
 ## Installation
 

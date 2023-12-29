@@ -11,10 +11,11 @@ makedocs(;
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
         canonical = "https://MilesCranmer.github.io/UniAdminTools.jl",
+        repolink = "https://github.com/MilesCranmer/UniAdminTools.jl",
         edit_link = "master",
         assets = String[],
     ),
-    pages = ["Home" => "index.md"],
+    pages = ["Home" => "index.md", "`mergescore`" => "mergescore.md"],
     warnonly = true,
 )
 

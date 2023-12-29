@@ -99,11 +99,11 @@ Estimate true scores of candidates from sparse observations by committee members
 Say we put all the data into a file `data.csv`:
 
 ```csv
-candidates,Scorer AA,BB,DD,FF,HH,LL,MM,avg,spread
-Candidate 1,,7.9,,8.5,8.2,8.4,,8,0.26
-Candidate 2,4.2,7.4,3.7,,,,2.8,5,1.63
-Candidate 3,,4.4,,5.2,5.7,,5.2,5,0.48
-Candidate First name Last name,9.6,,7.6,,8,,,9,1.03
+candidates,Scorer AA,BB,DD,FF,HH,LL,MM
+Candidate 1,,7.9,,8.5,8.2,8.4,
+Candidate 2,4.2,7.4,3.7,,,,2.8
+Candidate 3,,4.4,,5.2,5.7,,5.2
+Candidate First name Last name,9.6,,7.6,,8,,
 Candidate 5,,,,,,,,,
 ```
 
